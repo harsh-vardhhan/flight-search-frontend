@@ -64,7 +64,8 @@ export default function RupeeTravelApp() {
   const [micVolume, setMicVolume] = useState(0); // For real-time volume
   
   const transcriptRef = useRef('');
-  const silenceTimer = useRef<NodeJS.Timeout | null>(null);
+  // CORRECTED: Use a more generic type for the timer to avoid environment conflicts.
+  const silenceTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const scrollViewRef = useRef<ScrollView>(null);
   const insets = useSafeAreaInsets(); // Hook to fix bottom navigation overlap
 
