@@ -20,33 +20,27 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 // --- Waveform Animation Component ---
-// Now accepts a real-time volume level (0-1)
 const WaveformAnimation = ({ isListening, volume }: { isListening: boolean; volume: number }) => {
   const waveAnims = useRef(Array(5).fill(null).map(() => new Animated.Value(5))).current;
 
   useEffect(() => {
     if (isListening) {
-      // Map the volume (0 to 1) to a wave height (5 to 50)
       const targetHeight = 5 + (volume * 45);
-      
-      // Animate each bar to the new height based on volume
       const animations = waveAnims.map((anim) => {
         return Animated.timing(anim, {
-          toValue: targetHeight + (Math.random() * 10 - 5), // Add slight variation
+          toValue: targetHeight + (Math.random() * 10 - 5),
           duration: 100,
           useNativeDriver: false,
         });
       });
       Animated.parallel(animations).start();
-
     } else {
-      // Animate back to the base height when not listening
       const animations = waveAnims.map(anim => 
         Animated.spring(anim, { toValue: 5, useNativeDriver: false })
       );
       Animated.parallel(animations).start();
     }
-  }, [isListening, volume]); // Re-run animation when volume changes
+  }, [isListening, volume]);
 
   return (
     <View style={styles.waveformContainer}>
@@ -59,22 +53,56 @@ const WaveformAnimation = ({ isListening, volume }: { isListening: boolean; volu
 
 
 export default function RupeeTravelApp() {
-  const [status, setStatus] = useState('idle'); // idle, listening, processing, done
+  const [status, setStatus] = useState('idle');
   const [conversation, setConversation] = useState<{ role: 'user' | 'assistant'; content: string }[]>([]);
-  const [micVolume, setMicVolume] = useState(0); // For real-time volume
+  const [micVolume, setMicVolume] = useState(0);
   
   const transcriptRef = useRef('');
-  // CORRECTED: Use a more generic type for the timer to avoid environment conflicts.
   const silenceTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const scrollViewRef = useRef<ScrollView>(null);
-  const insets = useSafeAreaInsets(); // Hook to fix bottom navigation overlap
+  const insets = useSafeAreaInsets();
 
-  // --- Speech Recognition Logic with Volume Metering ---
+  // --- Backend Communication ---
+  const sendTranscriptToBackend = async (text: string) => {
+    // !!! IMPORTANT !!!
+    // Replace this with your computer's local IP address.
+    // Your phone and computer must be on the same Wi-Fi network.
+    const backendUrl = 'http://192.168.29.3:8000/transcript'; // Example: 'http://192.168.1.10:8000/transcript'
+
+    try {
+      const response = await fetch(backendUrl, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ text: text }),
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      const data = await response.json();
+      console.log('Backend response:', data);
+      // Display the backend's reply in the conversation
+      const assistantMessage = { role: 'assistant' as const, content: data.reply || "Received!" };
+      setConversation(prev => [...prev, assistantMessage]);
+
+    } catch (error) {
+      console.error("Error sending transcript to backend:", error);
+      const assistantMessage = { role: 'assistant' as const, content: "Sorry, I couldn't connect to the server." };
+      setConversation(prev => [...prev, assistantMessage]);
+    } finally {
+      setStatus('done');
+    }
+  };
+
+  // --- Speech Recognition Logic ---
   const stopListeningAndProcess = async () => {
     if (status !== 'listening') return;
 
     setStatus('processing');
-    setMicVolume(0); // Reset volume on stop
+    setMicVolume(0);
     try {
       await ExpoSpeechRecognitionModule.stop();
       
@@ -84,11 +112,8 @@ export default function RupeeTravelApp() {
       const userMessage = { role: 'user' as const, content: finalTranscript };
       setConversation(prev => [...prev, userMessage]);
       
-      setTimeout(() => {
-          const assistantMessage = { role: 'assistant' as const, content: `I heard you say: "${finalTranscript}"` };
-          setConversation(prev => [...prev, assistantMessage]);
-          setStatus('done');
-      }, 500);
+      // Send the transcript to the backend instead of the timeout
+      await sendTranscriptToBackend(finalTranscript);
 
     } catch (error) {
       console.error('Failed to stop speech recognition', error);
@@ -114,13 +139,12 @@ export default function RupeeTravelApp() {
         return;
       }
 
-      // Start recognition with volume metering enabled
       await ExpoSpeechRecognitionModule.start({
         lang: 'en-IN',
         continuous: true,
         volumeChangeEventOptions: {
           enabled: true,
-          intervalMillis: 100, // How often to get volume updates
+          intervalMillis: 100,
         },
       });
       resetSilenceTimer();
@@ -137,7 +161,6 @@ export default function RupeeTravelApp() {
 
   // --- Speech Recognition Event Hooks ---
   useSpeechRecognitionEvent('volumechange', (event) => {
-    // Convert volume from range (-2 to 10) to a 0-1 scale
     const normalizedVolume = Math.min(Math.max(event.value / 10, 0), 1);
     setMicVolume(normalizedVolume);
   });
@@ -162,7 +185,6 @@ export default function RupeeTravelApp() {
     setMicVolume(0);
   });
 
-  // Effect to auto-scroll conversation
   useEffect(() => {
     scrollViewRef.current?.scrollToEnd({ animated: true });
   }, [conversation]);
@@ -290,7 +312,6 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     marginTop: 10,
-    marginBottom: 20,
   },
   waveformContainer: {
     height: 50,
