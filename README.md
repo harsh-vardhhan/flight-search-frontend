@@ -20,13 +20,25 @@ This is a React Native app built with [Expo](https://expo.dev) for searching fli
 
 ## API Details
 
-This app connects to a backend flight search API.  
-**Base URL:** `https://api.example.com/flights`  
+This app connects to a backend flight search API using an IP address and port (see `index.tsx` for configuration).  
+**Example Base URL:** `http://<YOUR_IP_ADDRESS>:<PORT>/flights`  
 **Endpoints:**
 - `GET /flights?origin=XXX&destination=YYY&date=YYYY-MM-DD`  
   Returns a list of available flights matching the search criteria.
 
-**Note:** Update the API URL in your environment configuration as needed.
+**Note:** Update the API URL in your environment configuration as needed.  
+**Backend Repository:**  
+[https://github.com/harsh-vardhhan/flight-search-backend](https://github.com/harsh-vardhhan/flight-search-backend)
+
+## Important Notes
+
+- **Device and Backend Connectivity:**  
+  Your mobile device and the backend server (localhost) must be connected to the same WiFi network for API requests to work.
+- **Emulators/Simulators:**  
+  You cannot use Android emulators or iOS simulators for this setup. Please use a real device with the Expo Go app.
+- **expo-speech-recognition:**  
+  To use [expo-speech-recognition](https://github.com/jamsch/expo-speech-recognition), you must create an `android` folder in your project.  
+  For setup instructions, refer to the [expo-speech-recognition repository](https://github.com/jamsch/expo-speech-recognition).
 
 ## Getting Started
 
@@ -40,10 +52,9 @@ This app connects to a backend flight search API.
    npx expo start
    ```
 
-3. **Run on device or simulator**
-   - Android emulator
-   - iOS simulator
-   - Expo Go app
+3. **Run on device**
+   - Use the Expo Go app on your physical mobile device.
+   - Scan the QR code displayed in the terminal or Expo Dev Tools.
 
 ## Project Structure
 
