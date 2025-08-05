@@ -1,50 +1,68 @@
-# Welcome to your Expo app 👋
+# Flight Search Frontend
 
-This is an [Expo](https://expo.dev) project created with [`create-expo-app`](https://www.npmjs.com/package/create-expo-app).
+<img width="1334" height="816" alt="screens" src="https://github.com/user-attachments/assets/d9553737-2ab9-4088-8549-74dae07a1ead" />
 
-## Get started
+This is a React Native app built with [Expo](https://expo.dev) for searching flights. It provides a user-friendly interface to search, view, and filter flight options.
 
-1. Install dependencies
+## Features
 
+- Search for flights by origin, destination, and date
+- View flight details including airline, price, and duration
+- Filter and sort results
+- Responsive design for mobile devices
+
+## Technologies Used
+
+- **Expo**: For rapid React Native development
+- **React Native**: UI framework
+- **React Navigation**: Routing and navigation
+- **Axios**: For API requests
+
+## API Details
+
+This app connects to a backend flight search API.  
+**Base URL:** `https://api.example.com/flights`  
+**Endpoints:**
+- `GET /flights?origin=XXX&destination=YYY&date=YYYY-MM-DD`  
+  Returns a list of available flights matching the search criteria.
+
+**Note:** Update the API URL in your environment configuration as needed.
+
+## Getting Started
+
+1. **Install dependencies**
    ```bash
    npm install
    ```
 
-2. Start the app
-
+2. **Start the app**
    ```bash
    npx expo start
    ```
 
-In the output, you'll find options to open the app in a
+3. **Run on device or simulator**
+   - Android emulator
+   - iOS simulator
+   - Expo Go app
 
-- [development build](https://docs.expo.dev/develop/development-builds/introduction/)
-- [Android emulator](https://docs.expo.dev/workflow/android-studio-emulator/)
-- [iOS simulator](https://docs.expo.dev/workflow/ios-simulator/)
-- [Expo Go](https://expo.dev/go), a limited sandbox for trying out app development with Expo
+## Project Structure
 
-You can start developing by editing the files inside the **app** directory. This project uses [file-based routing](https://docs.expo.dev/router/introduction).
+- `app/` — Main application code
+- `components/` — Reusable UI components
+- `services/` — API service logic
 
-## Get a fresh project
+## Development
 
-When you're ready, run:
+Start editing files in the `app` directory.  
+This project uses [file-based routing](https://docs.expo.dev/router/introduction).
 
-```bash
-npm run reset-project
-```
+## Learn More
 
-This command will move the starter code to the **app-example** directory and create a blank **app** directory where you can start developing.
+- [Expo documentation](https://docs.expo.dev/)
+- [React Native docs](https://reactnative.dev/)
+- [API docs](https://api.example.com/docs) *(replace with your actual API docs)*
 
-## Learn more
+## Community
 
-To learn more about developing your project with Expo, look at the following resources:
-
-- [Expo documentation](https://docs.expo.dev/): Learn fundamentals, or go into advanced topics with our [guides](https://docs.expo.dev/guides).
-- [Learn Expo tutorial](https://docs.expo.dev/tutorial/introduction/): Follow a step-by-step tutorial where you'll create a project that runs on Android, iOS, and the web.
-
-## Join the community
-
-Join our community of developers creating universal apps.
-
-- [Expo on GitHub](https://github.com/expo/expo): View our open source platform and contribute.
-- [Discord community](https://chat.expo.dev): Chat with Expo users and ask questions.
+- [Expo on GitHub](https://github.com/expo/expo)
+- [Expo Discord](https://chat.expo.dev)
