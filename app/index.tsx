@@ -1,5 +1,3 @@
-// index.tsx
-
 import { FontAwesome5 } from '@expo/vector-icons';
 import {
   ExpoSpeechRecognitionModule,
@@ -18,12 +16,12 @@ import {
   StyleSheet,
   Text,
   TouchableOpacity,
-  useColorScheme, // <-- IMPORT useColorScheme
+  useColorScheme,
   View,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-// --- NEW: Define Theme Colors ---
+// --- Theme Color Palettes ---
 const theme = {
   light: {
     background: '#F0F2F5',
@@ -35,6 +33,7 @@ const theme = {
     assistantBubble: '#FFFFFF',
     cardBackground: '#FFFFFF',
     cardBorder: '#CED0D4',
+    footerBorder: '#CED0D4',
     statusBar: 'dark-content' as 'dark-content' | 'light-content',
   },
   dark: {
@@ -47,11 +46,12 @@ const theme = {
     assistantBubble: '#242526',
     cardBackground: '#2A2A2A',
     cardBorder: '#3A3A3A',
+    footerBorder: '#222222',
     statusBar: 'light-content' as 'dark-content' | 'light-content',
   },
 };
 
-// --- Type Definitions (Unchanged) ---
+// --- Type Definitions ---
 type Flight = {
   id: number;
   date: string;
@@ -67,12 +67,10 @@ type ConversationEntry = {
   flights?: Flight[];
 };
 
-
-// --- Waveform Animation Component (Modified to use theme colors) ---
+// --- Child Components ---
 const WaveformAnimation = ({ isListening, volume, color }: { isListening: boolean; volume: number, color: string }) => {
   const waveAnims = useRef(Array(5).fill(null).map(() => new Animated.Value(5))).current;
   useEffect(() => {
-    // ... (animation logic is the same)
     if (isListening) {
       const targetHeight = 5 + (volume * 45);
       const animations = waveAnims.map((anim) => Animated.timing(anim, { toValue: targetHeight + (Math.random() * 10 - 5), duration: 100, useNativeDriver: false }));
@@ -92,8 +90,6 @@ const WaveformAnimation = ({ isListening, volume, color }: { isListening: boolea
   );
 };
 
-
-// --- Flight Card Component (Modified to use theme colors) ---
 const FlightCard = ({ flight, colors }: { flight: Flight, colors: typeof theme.light }) => {
   const handlePress = () => Linking.openURL(flight.link).catch(err => console.error("Couldn't load page", err));
   const formattedDate = new Date(flight.date).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
@@ -105,34 +101,24 @@ const FlightCard = ({ flight, colors }: { flight: Flight, colors: typeof theme.l
         <Text style={[styles.flightPrice, { color: colors.primary }]}>₹{flight.price_inr.toLocaleString('en-IN')}</Text>
       </View>
       <View style={styles.flightDetails}>
-        <View style={styles.locationContainer}>
-            <FontAwesome5 name="plane-departure" size={16} color={colors.subtleText} />
-            <Text style={[styles.locationText, { color: colors.text }]}>{flight.origin}</Text>
-        </View>
+        <View style={styles.locationContainer}><FontAwesome5 name="plane-departure" size={16} color={colors.subtleText} /><Text style={[styles.locationText, { color: colors.text }]}>{flight.origin}</Text></View>
         <FontAwesome5 name="long-arrow-alt-right" size={20} color={colors.primary} style={{ marginHorizontal: 10 }}/>
-        <View style={styles.locationContainer}>
-            <FontAwesome5 name="plane-arrival" size={16} color={colors.subtleText} />
-            <Text style={[styles.locationText, { color: colors.text }]}>{flight.destination}</Text>
-        </View>
+        <View style={styles.locationContainer}><FontAwesome5 name="plane-arrival" size={16} color={colors.subtleText} /><Text style={[styles.locationText, { color: colors.text }]}>{flight.destination}</Text></View>
       </View>
       <View style={[styles.flightFooter, { borderTopColor: colors.cardBorder }]}>
-        <View style={styles.dateContainer}>
-            <FontAwesome5 name="calendar-alt" size={14} color={colors.subtleText} />
-            <Text style={[styles.dateText, { color: colors.subtleText }]}>{formattedDate}</Text>
-        </View>
-        <TouchableOpacity style={[styles.bookButton, { backgroundColor: colors.primary }]} onPress={handlePress}>
-          <Text style={styles.bookButtonText}>View Deal</Text>
-        </TouchableOpacity>
+        <View style={styles.dateContainer}><FontAwesome5 name="calendar-alt" size={14} color={colors.subtleText} /><Text style={[styles.dateText, { color: colors.subtleText }]}>{formattedDate}</Text></View>
+        <TouchableOpacity style={[styles.bookButton, { backgroundColor: colors.primary }]} onPress={handlePress}><Text style={styles.bookButtonText}>View Deal</Text></TouchableOpacity>
       </View>
     </View>
   );
 };
 
 
+// --- Main App Component ---
 export default function RupeeTravelApp() {
-  // --- NEW: Detect system theme ---
   const colorScheme = useColorScheme();
-  const colors = theme[colorScheme || 'light']; // Default to light mode
+  const colors = theme[colorScheme || 'light'];
+  const insets = useSafeAreaInsets(); // Restore for original footer layout
 
   const [status, setStatus] = useState('idle');
   const [conversation, setConversation] = useState<ConversationEntry[]>([]);
@@ -141,45 +127,52 @@ export default function RupeeTravelApp() {
   const transcriptRef = useRef('');
   const silenceTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const scrollViewRef = useRef<ScrollView>(null);
-  const insets = useSafeAreaInsets();
 
-  // --- Backend Communication and Speech Logic (Unchanged) ---
   const sendTranscriptToBackend = async (text: string) => {
-    const backendUrl = 'http://192.168.29.3:8000/transcript';
+    const backendUrl = 'http://192.168.29.3:8000/transcript'; // Replace with your IP
+    let assistantMessage: ConversationEntry;
+
     try {
-      const response = await fetch(backendUrl, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ text: text }), });
-      if (!response.ok) { throw new Error(`HTTP error! status: ${response.status}`); }
+      const response = await fetch(backendUrl, {
+        method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ text: text }),
+      });
       const data = await response.json();
-      let assistantMessage: ConversationEntry;
-      if (data.query_type === 'flight_related' && Array.isArray(data.data) && data.data.length > 0) {
-        assistantMessage = { role: 'assistant', content: 'Here are the best flights I found for your trip:', flights: data.data, };
+      if (!response.ok) { throw new Error(data.detail || 'An unknown server error occurred.'); }
+      console.log('Backend response:', data);
+
+      if (data.status === 'success') {
+        if (data.query_type === 'flight_related' && Array.isArray(data.data) && data.data.length > 0) {
+          assistantMessage = { role: 'assistant', content: 'Here are the best flights I found:', flights: data.data };
+        } else {
+          assistantMessage = { role: 'assistant', content: typeof data.data === 'string' ? data.data : "I'm not sure how to respond to that." };
+        }
+      } else if (data.status === 'error') {
+        assistantMessage = { role: 'assistant', content: data.data };
       } else {
-        assistantMessage = { role: 'assistant', content: typeof data.data === 'string' ? data.data : "Sorry, I couldn't find any results for that.", };
+        throw new Error('Received an unexpected response from the server.');
       }
-      setConversation(prev => [...prev, assistantMessage]);
-    } catch (error) {
-      console.error("Error sending transcript to backend:", error);
-      const assistantMessage = { role: 'assistant' as const, content: "Sorry, I couldn't connect to the server." };
-      setConversation(prev => [...prev, assistantMessage]);
+    } catch (error: any) {
+      console.error("Error processing request:", error);
+      assistantMessage = { role: 'assistant', content: error.message || "Sorry, I couldn't connect to the server." };
     } finally {
+      // @ts-ignore
+      setConversation(prev => [...prev, assistantMessage]);
       setStatus('done');
     }
   };
-  const stopListeningAndProcess = async () => { /* ... unchanged ... */ if (status !== 'listening') return; setStatus('processing'); setMicVolume(0); try { await ExpoSpeechRecognitionModule.stop(); const finalTranscript = transcriptRef.current || "I couldn't hear that, please try again."; transcriptRef.current = ''; const userMessage = { role: 'user' as const, content: finalTranscript }; setConversation(prev => [...prev, userMessage]); await sendTranscriptToBackend(finalTranscript); } catch (error) { console.error('Failed to stop speech recognition', error); setStatus('idle'); } };
-  const handleToggleListen = async () => { /* ... unchanged ... */ if (status === 'listening') { await stopListeningAndProcess(); return; } setConversation([]); transcriptRef.current = ''; setStatus('listening'); try { const permissions = await ExpoSpeechRecognitionModule.requestPermissionsAsync(); if (!permissions.granted) { setStatus('idle'); setConversation([{ role: 'assistant', content: 'Permission to use the microphone was denied.' }]); return; } await ExpoSpeechRecognitionModule.start({ lang: 'en-IN', continuous: true, volumeChangeEventOptions: { enabled: true, intervalMillis: 100, }, }); resetSilenceTimer(); } catch (error) { console.error("Error starting speech recognition:", error); setStatus('idle'); } };
+  
+  const stopListeningAndProcess = async () => { if (status !== 'listening') return; setStatus('processing'); setMicVolume(0); try { await ExpoSpeechRecognitionModule.stop(); const finalTranscript = transcriptRef.current || "I couldn't hear that, please try again."; transcriptRef.current = ''; const userMessage = { role: 'user' as const, content: finalTranscript }; setConversation(prev => [...prev, userMessage]); await sendTranscriptToBackend(finalTranscript); } catch (error) { console.error('Failed to stop speech recognition', error); setStatus('idle'); } };
+  const handleToggleListen = async () => { if (status === 'listening') { await stopListeningAndProcess(); return; } setConversation([]); transcriptRef.current = ''; setStatus('listening'); try { const permissions = await ExpoSpeechRecognitionModule.requestPermissionsAsync(); if (!permissions.granted) { setStatus('idle'); setConversation([{ role: 'assistant', content: 'Permission to use the microphone was denied.' }]); return; } await ExpoSpeechRecognitionModule.start({ lang: 'en-IN', continuous: true, volumeChangeEventOptions: { enabled: true, intervalMillis: 100, }, }); resetSilenceTimer(); } catch (error) { console.error("Error starting speech recognition:", error); setStatus('idle'); } };
   const resetSilenceTimer = () => { if (silenceTimer.current) clearTimeout(silenceTimer.current); silenceTimer.current = setTimeout(stopListeningAndProcess, 2000); };
   useSpeechRecognitionEvent('volumechange', (event) => { const normalizedVolume = Math.min(Math.max(event.value / 10, 0), 1); setMicVolume(normalizedVolume); });
   useSpeechRecognitionEvent('result', (event) => { if (event.results && event.results.length > 0) { transcriptRef.current = event.results[0]?.transcript || ''; resetSilenceTimer(); } });
   useSpeechRecognitionEvent('end', () => { if (status === 'listening') { setStatus('idle'); setMicVolume(0); } });
   useSpeechRecognitionEvent('error', (event) => { console.error('Speech recognition error:', event.error, event.message); setStatus('idle'); setMicVolume(0); });
   useEffect(() => { scrollViewRef.current?.scrollToEnd({ animated: true }); }, [conversation]);
-  // --- End of Unchanged Logic ---
 
   return (
     <SafeAreaView style={[styles.safeArea, { backgroundColor: colors.background }]}>
-      {/* --- MODIFIED: Dynamic status bar --- */}
       <StatusBar barStyle={colors.statusBar} />
-
       <KeyboardAvoidingView 
         behavior={Platform.OS === "ios" ? "padding" : "height"}
         style={styles.container}
@@ -198,7 +191,6 @@ export default function RupeeTravelApp() {
             <Text style={[styles.placeholderText, { color: colors.placeholderText }]}>Press the mic and ask me to find flights!</Text>
           )}
 
-          {/* --- MODIFIED: Render loop to pass theme colors --- */}
           {conversation.map((entry, index) => {
             if (entry.role === 'user') {
               return (
@@ -220,7 +212,7 @@ export default function RupeeTravelApp() {
           })}
         </ScrollView>
 
-        <View style={[styles.footer, { paddingBottom: insets.bottom || 20, borderTopColor: colors.cardBorder }]}>
+        <View style={[styles.footer, { paddingBottom: insets.bottom || 20, borderTopColor: colors.footerBorder }]}>
             {status === 'listening' && <WaveformAnimation isListening={true} volume={micVolume} color={colors.primary} />}
             {status === 'processing' && <ActivityIndicator size="large" color={colors.primary} style={{height: 50}}/>}
             {status !== 'listening' && status !== 'processing' && <View style={{height: 50}} />}
@@ -236,8 +228,8 @@ export default function RupeeTravelApp() {
   );
 }
 
-// --- MODIFIED: Stylesheet with colors removed ---
-// Colors are now applied dynamically in the component's JSX
+
+// --- Restored Original Stylesheet (with colors removed for theming) ---
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
@@ -248,6 +240,7 @@ const styles = StyleSheet.create({
   header: {
     paddingHorizontal: 20,
     paddingTop: 20,
+    paddingBottom: 10, // Added some bottom padding
   },
   title: {
     fontSize: 32,
